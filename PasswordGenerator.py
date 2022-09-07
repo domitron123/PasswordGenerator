@@ -1,6 +1,7 @@
 from os import stat
 from pickle import APPEND
 from random import choices, random
+from tkinter.tix import ButtonBox
 import easygui
 import string
 import random
@@ -15,7 +16,6 @@ passwd = []
 characters = string.ascii_letters + string.digits + string.punctuation
 
 full = 'storage.txt'
-
 
 def my_exit_function(Program_ended):
 
@@ -62,11 +62,24 @@ if __name__ == '__main__':
     def StartUp():
 
         enteracc = easygui.buttonbox(
-            "Password generator - Dom", choices=("Login", "Create account",))
+            "Password generator - Dom", choices=("Login", "Create account"))
         # todo PASSWORD SAVING AMONG LINES
         if enteracc == "Login":
             login()
-        if enteracc == "Create account":
+            
+        #* will warn that creating new account will erase already saved passwords if there are bytes saved within 'storage.txt' 
+        #* 
+        #& this eliminates the issue of a user creating a new account and viewing saved passwords
+        if enteracc == "Create account" and os.stat(full).st_size != 0:
+                erase = easygui.buttonbox(
+                    "WARNING: CREATING A NEW ACCOUNT WILL EREASE ALL CURRENT SAVED PASSWORDS", choices=("Continue", "Go back"))
+                if erase == "Go back":
+                    login()
+                if erase == "Continue":
+                    #* erases all characters within 'stroage.txt' file
+                    open("storage.txt", "w").close()
+                    signup()
+        if enteracc == "Create account" and os.stat(full).st_size == 0:
             signup()
         else:
             SystemExit()
@@ -74,26 +87,27 @@ if __name__ == '__main__':
     # & signup function - create user account
 
     def signup():
-        email = easygui.enterbox("Enter email address: ")
-        userpw = easygui.passwordbox("Enter password: ")
-        conf_userpw = easygui.passwordbox("Confirm password: ")
+        
+            email = easygui.enterbox("Enter email address: ")
+            userpw = easygui.passwordbox("Enter password: ")
+            conf_userpw = easygui.passwordbox("Confirm password: ")
 
-        if conf_userpw == userpw:
-            # * encode the users password
-            enc = conf_userpw.encode()
-            hash1 = hashlib.md5(enc).hexdigest()
+            if conf_userpw == userpw:
+                # * encode the users password
+                enc = conf_userpw.encode()
+                hash1 = hashlib.md5(enc).hexdigest()
 
-        else:
-            easygui.msgbox("Password is not same as above! \n")
-            signup()
+            else:
+                easygui.msgbox("Password is not same as above! \n")
+                signup()
 
-        # * create 'credentials.txt' file and save the users email and encoded password within
-        with open("credentials.txt", "w") as f:
-            f.write(email + "\n")
-            f.write(hash1)
-        f.close()
-        easygui.msgbox("You have registered successfully!")
-        login()
+            # * create 'credentials.txt' file and save the users email and encoded password within
+            with open("credentials.txt", "w") as f:
+                f.write(email + "\n")
+                f.write(hash1)
+            f.close()
+            easygui.msgbox("You have registered successfully!")
+            login()
 
     def login():
         email = easygui.enterbox("Enter email: ")
@@ -164,7 +178,8 @@ if __name__ == '__main__':
 
         # * opens 'storage.txt' file and writes newly generated password
         file = open('storage.txt', 'w')
-        file.write(passwd + '\n')
+        file.write(passwd)
+        file.write('\n')
         # * closes file to save
         file.close()
         easygui.msgbox("Your generated password is: " + passwd)
@@ -172,4 +187,3 @@ if __name__ == '__main__':
 
     # & initialize StartUp function
     StartUp()
-    
