@@ -17,6 +17,7 @@ characters = string.ascii_letters + string.digits + string.punctuation
 
 full = 'storage.txt'
 
+#ANCHOR
 def my_exit_function(Program_ended):
 
     # * open file in read mode
@@ -53,12 +54,12 @@ def my_exit_function(Program_ended):
             encrypted_file.write(encrypted)
         print("'storage.txt' encrypted")
 
-
+#ANCHOR
 if __name__ == '__main__':
     # * if script ends then run encryption above
     atexit.register(my_exit_function, 'some argument', )
 
-    # & StartUp function which launches login screen and encrypts storage.txt
+    #ANCHOR #& StartUp function which launches login screen and encrypts storage.txt
     def StartUp():
 
         enteracc = easygui.buttonbox(
@@ -68,7 +69,6 @@ if __name__ == '__main__':
             login()
             
         #* will warn that creating new account will erase already saved passwords if there are bytes saved within 'storage.txt' 
-        #* 
         #& this eliminates the issue of a user creating a new account and viewing saved passwords
         if enteracc == "Create account" and os.stat(full).st_size != 0:
                 erase = easygui.buttonbox(
@@ -84,8 +84,7 @@ if __name__ == '__main__':
         else:
             SystemExit()
 
-    # & signup function - create user account
-
+    # ANCHOR #& signup function - create user account
     def signup():
         
             email = easygui.enterbox("Enter email address: ")
@@ -108,7 +107,7 @@ if __name__ == '__main__':
             f.close()
             easygui.msgbox("You have registered successfully!")
             login()
-
+    #ANCHOR #& login function - login window
     def login():
         email = easygui.enterbox("Enter email: ")
         userpw = easygui.passwordbox("Enter password: ")
@@ -152,8 +151,7 @@ if __name__ == '__main__':
             easygui.msgbox("Login failed! \n")
             login()
 
-    # & Main function interface menu - view existing passwords or generate new
-
+    #ANCHOR #& Main function interface menu - view existing passwords or generate new
     def Main():
         MainChoice = easygui.buttonbox("Password generator", choices=(
             "Create new password", "View existing passwords"))
@@ -166,9 +164,7 @@ if __name__ == '__main__':
         else:
             quit()
 
-    # & GeneratePwd function - generates users password and saves in 'storage.txt'
-    # todo WORK IN PROGRESS - NEEDS TO BE MULTI-LINED('\N') AND ENCRYPTED
-
+    #ANCHOR #& GeneratePwd function - generates users password and saves in 'storage.txt'
     def GeneratePwd():
         ChaLen = easygui.integerbox("How many characters")
         # * generate password length depending on ChaLen length
@@ -177,7 +173,7 @@ if __name__ == '__main__':
             passwd = ''.join(random.choice(characters) for i in range(ChaLen))
 
         # * opens 'storage.txt' file and writes newly generated password
-        file = open('storage.txt', 'w')
+        file = open('storage.txt', 'a')
         file.write(passwd)
         file.write('\n')
         # * closes file to save
@@ -185,5 +181,5 @@ if __name__ == '__main__':
         easygui.msgbox("Your generated password is: " + passwd)
         Main()
 
-    # & initialize StartUp function
+    #ANCHOR #& initialize StartUp function
     StartUp()
