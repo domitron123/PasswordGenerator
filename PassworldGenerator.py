@@ -5,98 +5,170 @@ import easygui
 import string
 import random
 import hashlib
+from cryptography.fernet import Fernet
+import atexit
+import os
 
 
 # * lists for generated password and list including all characters
 passwd = []
 characters = string.ascii_letters + string.digits + string.punctuation
 
+full = 'storage.txt'
 
-# & StartUp function which launches login screen
-def StartUp():
-    enteracc = easygui.buttonbox(
-        "Password generator - Dom", choices=("Login", "Create account",))
-    # todo PASSWORD SAVING AND CREATING
-    if enteracc == "Login":
+
+def my_exit_function(Program_ended):
+
+    # * open file in read mode
+    file = open("storage.txt", "r")
+
+    # * read the content of file
+    Len = file.read().replace(" ", "")
+
+    # * get the length of the data
+    ChaLen = len(Len)
+
+    # * if storage.txt file is != 0 bytes and if the character length is <= 99
+    # * this is to prevent an encrypted password become encrypted
+    if os.stat(full).st_size != 0 and ChaLen <= 99:
+        print("File is filled")
+
+        # * opening the key
+        with open('filekey.key', 'rb') as filekey:
+            key = filekey.read()
+
+        # * using the generated key
+        fernet = Fernet(key)
+
+        # * opening the original file to encrypt
+        with open('storage.txt', 'rb') as file:
+            original = file.read()
+
+        # * encrypting the file
+        encrypted = fernet.encrypt(original)
+
+        # * opening the file in write mode and
+        # * writing the encrypted data
+        with open('storage.txt', 'wb') as encrypted_file:
+            encrypted_file.write(encrypted)
+        print("'storage.txt' encrypted")
+
+
+if __name__ == '__main__':
+    # * if script ends then run encryption above
+    atexit.register(my_exit_function, 'some argument', )
+
+    # & StartUp function which launches login screen and encrypts storage.txt
+    def StartUp():
+
+        enteracc = easygui.buttonbox(
+            "Password generator - Dom", choices=("Login", "Create account",))
+        # todo PASSWORD SAVING AMONG LINES
+        if enteracc == "Login":
+            login()
+        if enteracc == "Create account":
+            signup()
+        else:
+            SystemExit()
+
+    # & signup function - create user account
+
+    def signup():
+        email = easygui.enterbox("Enter email address: ")
+        userpw = easygui.passwordbox("Enter password: ")
+        conf_userpw = easygui.passwordbox("Confirm password: ")
+
+        if conf_userpw == userpw:
+            # * encode the users password
+            enc = conf_userpw.encode()
+            hash1 = hashlib.md5(enc).hexdigest()
+
+        else:
+            easygui.msgbox("Password is not same as above! \n")
+            signup()
+
+        # * create 'credentials.txt' file and save the users email and encoded password within
+        with open("credentials.txt", "w") as f:
+            f.write(email + "\n")
+            f.write(hash1)
+        f.close()
+        easygui.msgbox("You have registered successfully!")
         login()
-    if enteracc == "Create account":
-        signup()
 
+    def login():
+        email = easygui.enterbox("Enter email: ")
+        userpw = easygui.passwordbox("Enter password: ")
 
-# & signup function - create user account
-def signup():
-    email = easygui.enterbox("Enter email address: ")
-    userpw = easygui.passwordbox("Enter password: ")
-    conf_userpw = easygui.passwordbox("Confirm password: ")
+        # *  verifies that users password matches encoded password in 'credentials.txt'
+        auth = userpw.encode()
+        auth_hash = hashlib.md5(auth).hexdigest()
+        with open("credentials.txt", "r") as f:
+            stored_email, stored_pwd = f.read().split("\n")
+        f.close()
 
-    if conf_userpw == userpw:
-        # * encode the users password
-        enc = conf_userpw.encode()
-        hash1 = hashlib.md5(enc).hexdigest()
+        if email == stored_email and auth_hash == stored_pwd:
 
-    else:
-        easygui.msgbox("Password is not same as above! \n")
-        signup()
+            if os.stat(full).st_size != 0:
 
-    # * create 'credentials.txt' file and save the users email and encoded password within
-    with open("credentials.txt", "w") as f:
-        f.write(email + "\n")
-        f.write(hash1)
-    f.close()
-    easygui.msgbox("You have registered successfully!")
-    login()
+                # * opening the key
+                with open('filekey.key', 'rb') as filekey:
+                    key = filekey.read()
 
+                # * using the key
+                fernet = Fernet(key)
 
-def login():
-    email = easygui.enterbox("Enter email: ")
-    userpw = easygui.passwordbox("Enter password: ")
+                # * opening the encrypted file
+                with open('storage.txt', 'rb') as enc_file:
+                    encrypted = enc_file.read()
 
-    # *  verifies that users password matches encoded password in 'credentials.txt'
-    auth = userpw.encode()
-    auth_hash = hashlib.md5(auth).hexdigest()
-    with open("credentials.txt", "r") as f:
-        stored_email, stored_pwd = f.read().split("\n")
-    f.close()
+                # * decrypting the file
+                decrypted = fernet.decrypt(encrypted)
 
-    if email == stored_email and auth_hash == stored_pwd:
-        easygui.msgbox("Logged in Successfully!")
+                # * opening the file in write mode and
+                # * writing the decrypted data
+                with open('storage.txt', 'wb') as dec_file:
+                    dec_file.write(decrypted)
+
+            print("'storage.txt' unencrypted")
+
+            easygui.msgbox("Logged in Successfully!")
+            Main()
+
+        else:
+            easygui.msgbox("Login failed! \n")
+            login()
+
+    # & Main function interface menu - view existing passwords or generate new
+
+    def Main():
+        MainChoice = easygui.buttonbox("Password generator", choices=(
+            "Create new password", "View existing passwords"))
+        if MainChoice == "Create new password":
+            GeneratePwd()
+        if MainChoice == "View existing passwords":
+            # todo WORK ON SAVED PASSWORDS AMONG MULTIPLE LINES
+            easygui.msgbox("Password view in progress")
+            Main()
+        else:
+            quit()
+
+    # & GeneratePwd function - generates users password and saves in 'storage.txt'
+    # todo WORK IN PROGRESS - NEEDS TO BE MULTI-LINED('\N') AND ENCRYPTED
+
+    def GeneratePwd():
+        ChaLen = easygui.integerbox("How many characters")
+        # * generate password length depending on ChaLen length
+        for i in range(ChaLen):
+            # * joins random items from character list and randomises final password - new user password is saved as 'passwd'
+            passwd = ''.join(random.choice(characters) for i in range(ChaLen))
+
+        # * opens 'storage.txt' file and writes newly generated password
+        file = open('storage.txt', 'w')
+        file.write(passwd + '\n')
+        # * closes file to save
+        file.close()
+        easygui.msgbox("Your generated password is: " + passwd)
         Main()
-    else:
-        easygui.msgbox("Login failed! \n")
-        login()
 
-
-# & Main function interface menu - view existing passwords or generate new
-def Main():
-    MainChoice = easygui.buttonbox("Password generator", choices=(
-        "Create new password", "View existing passwords"))
-    if MainChoice == "Create new password":
-        GeneratePwd()
-    if MainChoice == "View existing passwords":
-        # todo WORK ON SAVED PASSWORDS
-        easygui.msgbox("Password view in progress")
-        Main()
-    else:
-        quit()
-
-
-# & GeneratePwd function - generates users password and saves in 'storage.txt'
-# todo WORK IN PROGRESS - NEEDS TO BE MULTI-LINED('\N') AND ENCRYPTED
-def GeneratePwd():
-    ChaLen = easygui.integerbox("How many characters")
-    # * generate password length depending on ChaLen length
-    for i in range(ChaLen):
-        # * joins random items from character list and randomises final password - new user password is saved as 'passwd'
-        passwd = ''.join(random.choice(characters) for i in range(ChaLen))
-
-    # * opens 'storage.txt' file and writes newly generated password
-    file = open('storage.txt', 'w')
-    file.write(passwd + '\n')
-    # * closes file to save
-    file.close()
-    easygui.msgbox("Your generated password is: " + passwd)
-    Main()
-
-
-# & initialize StartUp function
-StartUp()
+    # & initialize StartUp function
+    StartUp()
